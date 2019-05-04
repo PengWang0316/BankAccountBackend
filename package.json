@@ -18,7 +18,8 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "__tests__/helpers/",
-      "__tests__/debug_events/"
+      "__tests__/debug_events/",
+      "__tests__/utils/"
     ]
   },
   "dependencies": {
