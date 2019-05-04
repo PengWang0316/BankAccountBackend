@@ -30,6 +30,7 @@
     "@babel/plugin-transform-runtime": "^7.4.0",
     "@babel/preset-env": "^7.4.2",
     "@babel/runtime": "^7.4.2",
+    "@theledger/fabric-mock-stub": "^4.0.0",
     "babel-core": "^7.0.0-bridge.0",
     "babel-eslint": "^10.0.1",
     "coveralls": "^3.0.3",
@@ -39,6 +40,6 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.12.4",
     "jest": "^24.5.0",
-    "@theledger/fabric-mock-stub": "^4.0.0"
+    "sinon": "^7.3.2"
   }
 }
