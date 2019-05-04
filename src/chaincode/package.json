@@ -1,0 +1,16 @@
+{
+	"name": "account",
+	"version": "0.0.1",
+	"description": "account node.js",
+	"engines": {
+		"node": ">=8.4.0",
+		"npm": ">=5.3.0"
+	},
+	"scripts": {
+		"start": "node Account.js"
+	},
+	"engine-strict": true,
+	"dependencies": {
+		"fabric-shim": "1.2.0"
+	}
+}
