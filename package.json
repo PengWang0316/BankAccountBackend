@@ -26,6 +26,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.16.4",
+    "helmet": "^3.17.0",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
