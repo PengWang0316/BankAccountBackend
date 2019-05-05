@@ -3,6 +3,7 @@ import sinon from 'sinon';
 
 // import { mockDate, resetDateObject } from '../utils/MockDate';
 import Account from '../../src/chaincode/Account';
+import { fail } from 'assert';
 // You always need your chaincode so it knows which chaincode to invoke on
 
 let mockStub;
@@ -250,5 +251,14 @@ describe('Test Account Chaincode', () => {
     expect(payload[0].amount).toBe(200);
     expect(payload[0].type).toBe(DEPOSIT_TYPE);
     expect(payload[0].date).toBe(date);
+  });
+
+  test('Invock without a function name', async () => {
+    try {
+      await mockStub.mockInvoke('tx1', []);
+      fail('Should not reach here');
+    } catch (err) {
+      expect(err.message).toBe('No chaincode function with name:  found');
+    }
   });
 });
