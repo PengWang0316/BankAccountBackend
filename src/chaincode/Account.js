@@ -189,23 +189,27 @@ const Account = class {
     const dateString = today.toUTCString();
     const account = JSON.parse(await stub.getState(`${ACCOUNT_PREFIX}${accountId}`));
 
-    // Calculate the interest based on old amount and last update date
-    const interest = calculateInterest(account.balance, new Date(account.lastUpdate), today);
-    account.balance = (account.balance * 100 - amount * 100 + interest * 100) / 100;
+    // Throw an error when the balance less than amount money a user wants to withdraw
+    if (account.balance < amount) throw new Error('No sufficient balance.');
+    else {
+      // Calculate the interest based on old amount and last update date
+      const interest = calculateInterest(account.balance, new Date(account.lastUpdate), today);
+      account.balance = (account.balance * 100 - amount * 100 + interest * 100) / 100;
 
-    account.lastUpdate = dateString;
+      account.lastUpdate = dateString;
 
-    // update the account
-    await stub.putState(`${ACCOUNT_PREFIX}${account.accountId}`, Buffer.from(JSON.stringify(account)));
+      // update the account
+      await stub.putState(`${ACCOUNT_PREFIX}${account.accountId}`, Buffer.from(JSON.stringify(account)));
 
-    // Create a transaction for the interest
-    await createTransaction(stub, {
-      accountId, amount: interest, type: INTEREST_TYPE, date: dateString,
-    });
-    // Create a transaction for this withdraw
-    await createTransaction(stub, {
-      accountId, amount, type: WITHDRAW_TYPE, date: dateString,
-    });
+      // Create a transaction for the interest
+      await createTransaction(stub, {
+        accountId, amount: interest, type: INTEREST_TYPE, date: dateString,
+      });
+      // Create a transaction for this withdraw
+      await createTransaction(stub, {
+        accountId, amount, type: WITHDRAW_TYPE, date: dateString,
+      });
+    }
   }
 };
 

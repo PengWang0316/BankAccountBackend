@@ -169,7 +169,7 @@ describe('Test Account Chaincode', () => {
     });
   });
 
-  test('fetchTransactions', async () => {
+  test('withdraw with enough balance', async () => {
     const accountId = 'sdfsdfsd';
     const balance = 200;
     const date = new Date().toUTCString();
@@ -219,5 +219,36 @@ describe('Test Account Chaincode', () => {
       name: 'Kevin',
       lastUpdate: newDate,
     });
+  });
+
+  test('withdraw with enough balance', async () => {
+    const accountId = 'sdfsdfsd1qq';
+    const balance = 200;
+    const date = new Date().toUTCString();
+
+    await mockStub.mockInvoke('tx1', ['createAccount', JSON.stringify({
+      accountId, balance, name: 'Kevin',
+    })]);
+
+    DATE_TO_USE = sinon.useFakeTimers({ now: 1556948895861 }); // Set data to a new value
+
+    const result = await mockStub.mockInvoke('tx1', ['withdraw', JSON.stringify({
+      accountId, amount: 350,
+    })]);
+
+    expect(result.message).toEqual(new Error('No sufficient balance.'));
+
+    const response = await mockStub.mockInvoke('tx1', ['fetchTransactions', JSON.stringify({
+      accountId,
+    })]);
+
+    expect(response.status).toBe(200);
+    const payload = Transform.bufferToObject(response.payload);
+    expect(payload.length).toBe(1);
+    expect(payload[0].key).not.toBeUndefined();
+    expect(payload[0].key).not.toBeNull();
+    expect(payload[0].amount).toBe(200);
+    expect(payload[0].type).toBe(DEPOSIT_TYPE);
+    expect(payload[0].date).toBe(date);
   });
 });
