@@ -8,6 +8,7 @@
     "unitTest": "jest  __tests__/unit_tests/*",
     "unitTestWatch": "jest  __tests__/unit_tests/* --watch",
     "unitTestCoverage": "jest  __tests__/unit_tests/* --coverage",
+    "testCoverage": "jest --coverage",
     "integrationTest": "env AWS_XRAY_CONTEXT_MISSING=LOG_ERROR TEST_MODE=integration jest __tests__/test_cases/* --forceExit",
     "acceptanceTest": "env TEST_MODE=acceptance TEST_ROOT=https://uhvp3s4kca.execute-api.us-west-2.amazonaws.com/dev jest __tests__/test_cases/*"
   },
