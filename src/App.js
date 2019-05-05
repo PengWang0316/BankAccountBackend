@@ -8,7 +8,7 @@ app.use(cors());
 app.use(helmet());
 
 
-app.get('/api/v1/fetchAllAccount', (req, res) => {
+app.get('/api/v1/Accounts', (req, res) => {
   res.json({
     '123adb': {
       accountId: '123adb', balance: 300.23, name: 'Kevin Wang', lastUpdate: new Date('2018/10/01'),
