@@ -26,9 +26,11 @@ async function parseAccounts(iterator) {
     const res = await iterator.next();
     if (res.value && res.value.value.toString()) {
       try {
-        results[res.value.key] = JSON.parse(res.value.value.toString('utf8'));
+        const account = JSON.parse(res.value.value.toString('utf8'));
+        results[account.accountId] = account;
       } catch (err) {
-        results[res.value.key] = res.value.value.toString('utf8');
+        const account = res.value.value.toString('utf8');
+        results[account.accountId] = account;
       }
     }
     if (res.done) {
@@ -65,7 +67,7 @@ function dateDiffInDays(data1, data2) {
 }
 
 function calculateInterest(currentBalance, startDate, endDate) {
-  return ((currentBalance * 100) * Math.floor(dateDiffInDays(startDate, endDate) / 365 * 100) * (ANNUAL_INTEREST_RATE * 100)) / 1000000;
+  return (((currentBalance * 100) * Math.floor(dateDiffInDays(startDate, endDate) / 365 * 100) * (ANNUAL_INTEREST_RATE * 100)) / 1000000).toFixed(2) * 1;
 }
 
 const Account = class {
@@ -123,7 +125,7 @@ const Account = class {
 
     const account = JSON.parse(args);
     const key = `${ACCOUNT_PREFIX}${account.accountId}`;
-    account.lastUpdate = new Date().toUTCString();
+    if (!account.lastUpdate) account.lastUpdate = new Date().toUTCString();
 
     // console.log(`##### createAccount account: ${JSON.stringify(account)}`);
 
@@ -131,7 +133,10 @@ const Account = class {
 
     // Create a transaction for this account
     await createTransaction(stub, {
-      accountId: account.accountId, amount: account.balance, type: DEPOSIT_TYPE, date: account.lastUpdate,
+      accountId: account.accountId,
+      amount: account.balance,
+      type: DEPOSIT_TYPE,
+      date: account.lastUpdate,
     });
     // console.log('============= END : createAccount ===========');
   }
@@ -158,10 +163,9 @@ const Account = class {
   }
 
   async deposit(stub, args) {
-    const { accountId, amount } = JSON.parse(args);
-    const today = new Date();
+    const { accountId, amount, date } = JSON.parse(args);
+    const today = date ? new Date(date) : new Date();
     const dateString = today.toUTCString();
-
     const account = JSON.parse(await stub.getState(`${ACCOUNT_PREFIX}${accountId}`));
 
     // Added interest first and than add deposit amount
@@ -171,7 +175,7 @@ const Account = class {
     account.lastUpdate = dateString;
 
     // update the account
-    await stub.putState(`${ACCOUNT_PREFIX}${account.accountId}`, Buffer.from(JSON.stringify(account)));
+    await stub.putState(`${ACCOUNT_PREFIX}${accountId}`, Buffer.from(JSON.stringify(account)));
 
     // Create a transaction for the interest
     await createTransaction(stub, {
@@ -184,8 +188,8 @@ const Account = class {
   }
 
   async withdraw(stub, args) {
-    const { accountId, amount } = JSON.parse(args);
-    const today = new Date();
+    const { accountId, amount, date } = JSON.parse(args);
+    const today = date ? new Date(date) : new Date();
     const dateString = today.toUTCString();
     const account = JSON.parse(await stub.getState(`${ACCOUNT_PREFIX}${accountId}`));
 
@@ -199,7 +203,7 @@ const Account = class {
       account.lastUpdate = dateString;
 
       // update the account
-      await stub.putState(`${ACCOUNT_PREFIX}${account.accountId}`, Buffer.from(JSON.stringify(account)));
+      await stub.putState(`${ACCOUNT_PREFIX}${accountId}`, Buffer.from(JSON.stringify(account)));
 
       // Create a transaction for the interest
       await createTransaction(stub, {
