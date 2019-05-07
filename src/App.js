@@ -26,7 +26,7 @@ app.use(helmet());
 
 // Fabric config
 hfc.addConfigFile('config.json');
-const host = 'localhost';
+// const host = 'localhost';
 const port = 3000;
 const username = '';
 const orgName = '';
