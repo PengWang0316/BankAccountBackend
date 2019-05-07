@@ -6,8 +6,12 @@ const http = require('http');
 const hfc = require('fabric-client');
 const WebSocketServer = require('ws');
 const log4js = require('log4js');
-// const connection = require('./connection.js');
+
+// These four files below come from the AWS example
 const query = require('./query.js');
+const connection = require('./connection.js');
+const blockListener = require('./blocklistener.js');
+const invoke = require('./invoke.js');
 
 log4js.configure({
   appenders: { out: { type: 'stdout' } },
@@ -28,8 +32,8 @@ app.use(helmet());
 hfc.addConfigFile('config.json');
 // const host = 'localhost';
 const port = 3000;
-const username = '';
-const orgName = '';
+let username = '';
+let orgName = '';
 const channelName = hfc.getConfigSetting('channelName');
 const chaincodeName = hfc.getConfigSetting('chaincodeName');
 const peers = hfc.getConfigSetting('peers');
@@ -60,82 +64,54 @@ app.get(`${BASE_VERSION}accounts`, async (req, res) => {
   //   },
   // });
   const message = await query.queryChaincode(peers, channelName, chaincodeName, {}, 'fetchAllAccount', username, orgName);
+  res.json(message[0]);
+});
+
+app.post(`${BASE_VERSION}account`, async (req, res) => {
+  const { name, balance, accountId } = req.body;
+  await invoke.invokeChaincode(peers, channelName, chaincodeName, { name, balance, accountId }, 'createAccount', username, orgName);
+  res.end();
+});
+
+app.get(`${BASE_VERSION}transactions`, async (req, res) => {
+  const { id } = req.query;
+  const message = await query.queryChaincode(peers, channelName, chaincodeName, { accountId: id }, 'fetchTransactions', username, orgName);
   res.json(message);
 });
 
-app.post(`${BASE_VERSION}account`, (req, res) => {
-  const { name, balance } = req.body;
-  res.json({ accountId: `abcddddd_${Math.floor(Math.random() * 100)}`, name, balance });
-});
-
-app.get(`${BASE_VERSION}transactions`, (req, res) => {
-  const { id } = req.query;
-  res.json([
-    {
-      key: '1234', type: 'Deposit', amount: 200, date: new Date('2018/02/02'),
-    },
-    {
-      key: '1233', type: 'Interest', amount: 2.13, date: new Date('2018/02/04'),
-    },
-    {
-      key: '1434', type: 'Withdraw', amount: 100, date: new Date('2013/12/02'),
-    },
-    {
-      key: '1254', type: 'Deposit', amount: 20, date: new Date('2014/02/02'),
-    },
-    {
-      key: '1224', type: 'Withdraw', amount: 230, date: new Date('2018/05/02'),
-    },
-    {
-      key: '1214', type: 'Deposit', amount: 2000, date: new Date('2019/02/23'),
-    },
-    {
-      key: '1234a', type: 'Deposit', amount: 200, date: new Date('2018/02/02'),
-    },
-    {
-      key: '1233d', type: 'Interest', amount: 2.13, date: new Date('2018/02/04'),
-    },
-    {
-      key: '1434e', type: 'Withdraw', amount: 100, date: new Date('2013/12/02'),
-    },
-    {
-      key: '1254e', type: 'Deposit', amount: 20, date: new Date('2014/02/02'),
-    },
-    {
-      key: '1224f', type: 'Withdraw', amount: 230, date: new Date('2018/05/02'),
-    },
-    {
-      key: '1214v', type: 'Deposit', amount: 2000, date: new Date('2019/02/23'),
-    },
-    {
-      key: '1234d', type: 'Deposit', amount: 200, date: new Date('2018/02/02'),
-    },
-    {
-      key: '1233dd', type: 'Interest', amount: 2.13, date: new Date('2018/02/04'),
-    },
-    {
-      key: '1434h', type: 'Withdraw', amount: 100, date: new Date('2013/12/02'),
-    },
-    {
-      key: '12543', type: 'Deposit', amount: 20, date: new Date('2014/02/02'),
-    },
-    {
-      key: '12244', type: 'Withdraw', amount: 230, date: new Date('2018/05/02'),
-    },
-    {
-      key: '12145', type: 'Deposit', amount: 2000, date: new Date('2019/02/23'),
-    },
-  ]);
-});
-
-app.put(`${BASE_VERSION}account/deposit`, (req, res) => {
-  const { amount, accountId } = req.body;
-  console.log(amount, accountId);
+app.put(`${BASE_VERSION}account/deposit`, async (req, res) => {
+  const { amount, accountId, date } = req.body;
+  await invoke.invokeChaincode(peers, channelName, chaincodeName, { amount, accountId, date }, 'deposit', username, orgName);
   res.end();
 });
 
-app.put(`${BASE_VERSION}account/withdraw`, (req, res) => {
-  const { amount, accountId } = req.body;
-  console.log(amount, accountId);
+app.put(`${BASE_VERSION}account/withdraw`, async (req, res) => {
+  const { amount, accountId, date } = req.body;
+  await invoke.invokeChaincode(peers, channelName, chaincodeName, { amount, accountId, date }, 'withdraw', username, orgName);
   res.end();
+});
+
+// Register and enroll user. A user must be registered and enrolled before any queries
+// Use it to download the certification from CA
+// or transactions can be invoked
+app.post('/users', async (req, res) => {
+  logger.info('================ POST on Users');
+  ({ username, orgName } = req.body);
+  logger.info('##### End point : /users');
+  logger.info(`##### POST on Users- username : ${username}`);
+  logger.info(`##### POST on Users - userorg  : ${orgName}`);
+  const response = await connection.getRegisteredUser(username, orgName, true);
+  logger.info('##### POST on Users - returned from registering the username %s for organization %s', username, orgName);
+  logger.info('##### POST on Users - getRegisteredUser response secret %s', response.secret);
+  logger.info('##### POST on Users - getRegisteredUser response secret %s', response.message);
+  if (response && typeof response !== 'string') {
+    logger.info('##### POST on Users - Successfully registered the username %s for organization %s', username, orgName);
+    logger.info('##### POST on Users - getRegisteredUser response %s', response);
+    // Now that we have a username & org, we can start the block listener
+    await blockListener.startBlockListener(channelName, username, orgName, wss);
+    res.json(response);
+  } else {
+    logger.error('##### POST on Users - Failed to register the username %s for organization %s with::%s', username, orgName, response);
+    res.json({ success: false, message: response });
+  }
 });
