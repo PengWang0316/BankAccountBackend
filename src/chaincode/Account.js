@@ -1,7 +1,6 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable class-methods-use-this */
 const shim = require('fabric-shim');
-// const uuidv1 = require('uuid/v1');
 
 const ACCOUNT_PREFIX = 'a_';
 const TRANSACTION_PREFIX = 't_';
@@ -58,7 +57,6 @@ async function parseTransations(iterator) {
   }
 }
 
-// a and b are javascript Date objects
 function dateDiffInDays(data1, data2) {
   // Discard the time and time-zone information.
   const utc1 = Date.UTC(data1.getFullYear(), data1.getMonth(), data1.getDate());
@@ -77,7 +75,6 @@ const Account = class {
    * @param {*} stub
    */
   async Init(stub) {
-    // console.log('=========== Init: Instantiated / Upgraded ngo chaincode ===========');
     return shim.success();
   }
 
@@ -88,21 +85,16 @@ const Account = class {
    * @param {*} stub
    */
   async Invoke(stub) {
-    // console.log('============= START : Invoke ===========');
     const ret = stub.getFunctionAndParameters();
-    // console.log(`##### Invoke args: ${JSON.stringify(ret)}`);
 
     const method = this[ret.fcn];
     if (!method) {
-      // console.error(`##### Invoke - error: no chaincode function with name: ${ret.fcn} found`);
       throw new Error(`No chaincode function with name: ${ret.fcn} found`);
     }
     try {
       const response = await method(stub, ret.params);
-      // console.log(`##### Invoke response payload: ${response}`);
       return shim.success(response);
     } catch (err) {
-      // console.log(`##### Invoke - error: ${err}`);
       return shim.error(err);
     }
   }
@@ -113,21 +105,14 @@ const Account = class {
    * @param {*} stub
    * @param {*} args
    */
-  async initLedger(stub, args) {
-    // console.log('============= START : Initialize Ledger ===========');
-    // console.log('============= END : Initialize Ledger ===========');
-  }
+  async initLedger(stub, args) {}
 
   // TODO: check the input
   async createAccount(stub, args) {
-    // console.log('============= START : createAccount ===========');
-    // console.log(`##### createAccount arguments: ${JSON.stringify(args)}`);
-
     const account = JSON.parse(args);
     const key = `${ACCOUNT_PREFIX}${account.accountId}`;
     if (!account.lastUpdate) account.lastUpdate = new Date().toUTCString();
 
-    // console.log(`##### createAccount account: ${JSON.stringify(account)}`);
 
     await stub.putState(key, Buffer.from(JSON.stringify(account)));
 
@@ -138,7 +123,6 @@ const Account = class {
       type: DEPOSIT_TYPE,
       date: account.lastUpdate,
     });
-    // console.log('============= END : createAccount ===========');
   }
 
   async queryAccount(stub, args) {
@@ -217,5 +201,6 @@ const Account = class {
   }
 };
 
+// Uncomment the line below befor deploy (shim start will affect the local test)
 // shim.start(new Account());
 module.exports = Account;
